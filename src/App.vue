@@ -12,7 +12,7 @@
 
       <!-- Левый список всех участников (включая меня) -->
       <ParticipantsList :participants="allParticipantsForList" @toggle-mic="toggleMic" @toggle-cam="toggleCam"
-        @remove-participant="removeParticipant" />
+        @toggle-speaking="toggleSpeaking" @remove-participant="removeParticipant" />
     </div>
 
     <div class="grid-area">
@@ -25,7 +25,7 @@
            На первой странице показывает stage (топ-11 отсортированных по силе),
            дальше — остальных постранично -->
       <Grid :participants="sortedParticipants" @toggle-mic="toggleMic" @toggle-cam="toggleCam"
-        @remove-participant="removeParticipant" />
+        @toggle-speaking="toggleSpeaking" @remove-participant="removeParticipant" />
 
       <!-- Пагинация вправо -->
       <button v-if="hasNextPage" @click="nextPage" class="nav-btn nav-next">
@@ -89,7 +89,7 @@ export default {
       PAGE_SIZE = 11 → сцена всегда максимум 11 человек.
     */
     sortedParticipants() {
-      const me = { id: 'me', name: 'Алексей', mic: true, cam: true };
+      const me = { id: 'me', name: 'Алексей', mic: true, cam: true, speaking: false };
       const PAGE_SIZE = 11;
 
       // Если всего участников <= 11,
@@ -127,6 +127,7 @@ export default {
         name: 'Алексей',
         mic: true,
         cam: true,
+        speaking: false,
         pinned: true
       };
 
@@ -234,6 +235,7 @@ export default {
         name,
         mic: false,
         cam: hasCam,
+        speaking: false,
         pinned: false
       };
 
@@ -307,40 +309,35 @@ export default {
       if (!this.participants[id]) return;
 
       const participant = this.participants[id];
+      participant.mic = !participant.mic;
+    },
+
+    toggleSpeaking(id) {
+      if (id === 'me') return;
+      if (!this.participants[id]) return;
+
+      const participant = this.participants[id];
       const wasOnStage = this.stage.includes(id);
 
-      // Переключаем мик
-      participant.mic = !participant.mic;
+      participant.speaking = !participant.speaking;
 
       const PAGE_SIZE = 11;
-      // Если людей <= 11, stage вообще не используется, пересортизация не нужна
       if (this.participantsOrder.length <= PAGE_SIZE) return;
 
-      // Мик включили, участник был offStage → пробуем добавить в stage
-      if (participant.mic && !wasOnStage) {
-        // если он был в grace — снимаем grace
+      if (participant.speaking && !wasOnStage) {
         if (this.gracePeriodTimers[id]) {
           clearTimeout(this.gracePeriodTimers[id]);
           delete this.gracePeriodTimers[id];
         }
 
-        // Пытаемся вставить в stage (может вытолкнуть самого слабого там)
         this.tryAddToStage(id);
-
-        // Мик выключили, участник был на stage → даем ему 2 секунды grace
-      } else if (!participant.mic && wasOnStage) {
-        // убираем прошлый grace если есть
+      } else if (!participant.speaking && wasOnStage) {
         if (this.gracePeriodTimers[id]) {
           clearTimeout(this.gracePeriodTimers[id]);
           delete this.gracePeriodTimers[id];
         }
 
-        // создаем новый grace: 2 секунды
         this.gracePeriodTimers[id] = setTimeout(() => {
-          // по окончании grace проверяем:
-          // есть ли кто-то ВНЕ stage, у кого приоритет реально выше?
-          // если да → пересобираем сцену (он может вылететь).
-          // если нет → он остаётся, мы сцену не трогаем.
           const myPriority = this.getPriority(id);
 
           const offStage = this.participantsOrder.filter(otherId => !this.stage.includes(otherId));
@@ -353,7 +350,6 @@ export default {
             this.updateStage();
           }
 
-          // снимаем таймер из регистра
           delete this.gracePeriodTimers[id];
         }, 2000);
       }
@@ -443,21 +439,21 @@ export default {
       }
     },
 
-    /*
-      getPriority(id):
-      приоритет участника для ранжирования в сцене:
-        4 = mic && cam
-        3 = mic && !cam
-        2 = !mic && cam
-        1 = !mic && !cam
-      защита: если участник внезапно удалён во время рассчёта → вернуть 0
-    */
+      /*
+        getPriority(id):
+        приоритет участника для ранжирования в сцене:
+          4 = speaking && cam
+          3 = speaking && !cam
+          2 = !speaking && cam
+          1 = !speaking && !cam
+        защита: если участник внезапно удалён во время рассчёта → вернуть 0
+      */
     getPriority(id) {
       const p = this.participants[id];
       if (!p) return 0;  // защита от несуществующего id (участник уже мог быть удалён)
-      if (p.mic && p.cam) return 4;
-      if (p.mic && !p.cam) return 3;
-      if (!p.mic && p.cam) return 2;
+      if (p.speaking && p.cam) return 4;
+      if (p.speaking && !p.cam) return 3;
+      if (!p.speaking && p.cam) return 2;
       return 1;
     },
 
@@ -778,6 +774,20 @@ export default {
           const randomIndex = Math.floor(Math.random() * this.participantsOrder.length);
           const randomId = this.participantsOrder[randomIndex];
           this.toggleMic(randomId);
+        }
+      }
+
+      // Рандомно переключаем состояние "говорит" у до 5 участников
+      if (this.participantsOrder.length > 0) {
+        const speakingCount = Math.min(
+          Math.floor(Math.random() * 5) + 1,
+          this.participantsOrder.length
+        );
+
+        for (let i = 0; i < speakingCount; i++) {
+          const randomIndex = Math.floor(Math.random() * this.participantsOrder.length);
+          const randomId = this.participantsOrder[randomIndex];
+          this.toggleSpeaking(randomId);
         }
       }
     },

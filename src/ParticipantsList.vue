@@ -14,7 +14,7 @@
           <div class="participant-name">{{ participant.name }}</div>
           
           <div class="participant-controls">
-            <button 
+            <button
               @click="$emit('toggle-mic', participant.id)"
               class="control-btn"
               :class="{ active: participant.mic }"
@@ -22,8 +22,17 @@
             >
               🎤
             </button>
-            
-            <button 
+
+            <button
+              @click="$emit('toggle-speaking', participant.id)"
+              class="control-btn"
+              :class="{ active: participant.speaking }"
+              title="Говорит"
+            >
+              🗣️
+            </button>
+
+            <button
               @click="$emit('toggle-cam', participant.id)"
               class="control-btn"
               :class="{ active: participant.cam }"
@@ -55,8 +64,8 @@ export default {
       default: () => []
     }
   },
-  
-  emits: ['toggle-mic', 'toggle-cam', 'remove-participant']
+
+  emits: ['toggle-mic', 'toggle-speaking', 'toggle-cam', 'remove-participant']
 }
 </script>
 

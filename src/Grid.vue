@@ -2,8 +2,8 @@
   <div class="grid">
     <div v-for="(row, rowIndex) in rows" :key="rowIndex" class="row">
       <ParticipantCard v-for="participant in row" :key="participant.id" :participant="participant" :width="itemWidth"
-        @toggle-mic="$emit('toggle-mic', $event)" @toggle-cam="$emit('toggle-cam', $event)"
-        @remove-participant="$emit('remove-participant', $event)" />
+        @toggle-mic="$emit('toggle-mic', $event)" @toggle-speaking="$emit('toggle-speaking', $event)"
+        @toggle-cam="$emit('toggle-cam', $event)" @remove-participant="$emit('remove-participant', $event)" />
     </div>
   </div>
 </template>
