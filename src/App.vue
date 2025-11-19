@@ -44,7 +44,7 @@
 import Grid from './Grid.vue';
 import ParticipantsList from './ParticipantsList.vue';
 import { useMediaStore } from './stores/media'; // (пока не используется в этой версии)
-import { throttle } from 'lodash-es';
+import { throttle } from 'lodash';
 
 export default {
   components: {
