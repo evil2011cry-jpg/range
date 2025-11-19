@@ -2,7 +2,7 @@
     <div class="card" :style="{
         width: width + 'px',
         background: participant.cam ? '#e3f2fd' : '#ffffff',
-        borderColor: participant.mic ? '#f44336' : '#000000'
+        borderColor: participant.speaking ? '#f44336' : '#000000'
     }">
         <video v-if="participant.cam && mediaStore.myStream" :srcObject="mediaStore.myStream" autoplay playsinline muted
             disablePictureInPicture class="video" />
@@ -22,6 +22,9 @@
         <div class="controls">
             <button @click="$emit('toggle-mic', participant.id)" class="btn" :class="{ active: participant.mic }">
                 🎤
+            </button>
+            <button @click="$emit('toggle-speaking', participant.id)" class="btn" :class="{ active: participant.speaking }">
+                🗣️
             </button>
             <button @click="$emit('toggle-cam', participant.id)" class="btn" :class="{ active: participant.cam }">
                 📹
@@ -45,7 +48,7 @@ export default {
         }
     },
 
-    emits: ['toggle-mic', 'toggle-cam', 'remove-participant'],
+    emits: ['toggle-mic', 'toggle-speaking', 'toggle-cam', 'remove-participant'],
 
     computed: {
         mediaStore() {
